@@ -1642,6 +1642,7 @@ body::after{
         document.getElementById('drugName').innerText = currentDrug.name;
         document.getElementById('mechanism').innerText = currentDrug.mech;
         document.querySelector('#sideEffects span').innerText = currentDrug.side;
+        document.getElementById('indicationsBody').innerHTML = '<span style="opacity:.6;font-size:13px;">Fordítsd meg a kártyát az indikációkért.</span>';
         
         document.getElementById('answerSection').classList.remove('visible');
         document.getElementById('actionAreaReveal').classList.remove('hidden');
