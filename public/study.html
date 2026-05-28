@@ -208,6 +208,50 @@ body::after{
   color:var(--danger);text-transform:uppercase;margin-bottom:8px;font-weight:600;
 }
 
+.indications{
+  margin-top:14px;
+  font-size:15px;line-height:1.5;color:#d6ffe9;text-align:left;
+  background:linear-gradient(135deg,rgba(61,220,151,.16),rgba(31,167,117,.06));
+  padding:18px 20px;border-radius:16px;
+  border:1px solid rgba(61,220,151,.3);
+  border-left:3px solid #3ddc97;
+  backdrop-filter:blur(10px);
+}
+.indications strong{
+  display:block;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.3em;
+  color:#3ddc97;text-transform:uppercase;margin-bottom:8px;font-weight:600;
+}
+.indications ul{margin:0;padding-left:18px;}
+.indications li{margin:4px 0;}
+.indications .err{color:#ffb4be;font-size:13px;}
+.spinner{
+  display:inline-block;width:16px;height:16px;border-radius:50%;
+  border:2px solid rgba(61,220,151,.25);border-top-color:#3ddc97;
+  animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.api-modal{
+  position:fixed;inset:0;background:rgba(8,6,24,.75);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;
+}
+.api-modal-card{
+  background:linear-gradient(160deg,#1a1535,#0f0b25);
+  border:1px solid rgba(139,124,255,.35);border-radius:24px;
+  padding:28px;max-width:440px;width:100%;color:#f0ecff;
+  box-shadow:0 30px 80px -20px rgba(0,0,0,.6);
+}
+.api-modal-card h3{margin:0 0 8px;font-family:'Instrument Serif',serif;font-size:26px;font-weight:400;}
+.api-modal-card p{font-size:13px;line-height:1.5;color:#bdb6dc;margin:0 0 16px;}
+.api-modal-card input{
+  width:100%;padding:14px 16px;border-radius:12px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(139,124,255,.3);
+  color:#fff;font-family:'JetBrains Mono',monospace;font-size:13px;
+  outline:none;box-sizing:border-box;
+}
+.api-modal-card input:focus{border-color:var(--primary);}
+.api-modal-actions{display:flex;gap:10px;margin-top:16px;}
+
 .action-area{padding:0 28px 28px;display:flex;gap:12px}
 .btn{
   flex:1;padding:18px;font-family:'Space Grotesk',sans-serif;
