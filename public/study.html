@@ -1652,6 +1652,7 @@ body::after{
         document.getElementById('answerSection').classList.add('visible');
         document.getElementById('actionAreaReveal').classList.add('hidden');
         document.getElementById('actionAreaRate').classList.remove('hidden');
+        loadIndications(currentDrug);
     }
 
     function handleResult(wasCorrect) {
@@ -1669,6 +1670,133 @@ body::after{
         updateStats(totalInCategory);
         
         setTimeout(() => { nextQuestion(); }, 400); // Rövid szünet a kényelmes olvasáshoz
+    }
+
+    // ==========================================
+    // ANTHROPIC API – Alkalmazás (indikációk)
+    // ==========================================
+    const INDICATIONS_CACHE_KEY = 'indications_cache_v1';
+    const API_KEY_STORAGE = 'anthropic_api_key';
+
+    function getIndicationsCache(){
+        try { return JSON.parse(localStorage.getItem(INDICATIONS_CACHE_KEY) || '{}'); }
+        catch { return {}; }
+    }
+    function saveIndicationsCache(cache){
+        localStorage.setItem(INDICATIONS_CACHE_KEY, JSON.stringify(cache));
+    }
+
+    function ensureApiKey(){
+        return new Promise((resolve, reject) => {
+            const existing = localStorage.getItem(API_KEY_STORAGE);
+            if (existing) return resolve(existing);
+
+            const overlay = document.createElement('div');
+            overlay.className = 'api-modal';
+            overlay.innerHTML = `
+              <div class="api-modal-card">
+                <h3>Anthropic API kulcs</h3>
+                <p>Az „Alkalmazás" indikációk dinamikus lekéréséhez add meg a saját Anthropic API kulcsodat. Csak helyben, a böngésződben tároljuk (localStorage).</p>
+                <input id="apiKeyInput" type="password" placeholder="sk-ant-..." autocomplete="off" />
+                <div class="api-modal-actions">
+                  <button class="btn btn-wrong" id="apiCancel">Mégse</button>
+                  <button class="btn btn-correct" id="apiSave">Mentés</button>
+                </div>
+              </div>`;
+            document.body.appendChild(overlay);
+            const input = overlay.querySelector('#apiKeyInput');
+            input.focus();
+            overlay.querySelector('#apiSave').onclick = () => {
+                const v = input.value.trim();
+                if (!v) { input.focus(); return; }
+                localStorage.setItem(API_KEY_STORAGE, v);
+                overlay.remove();
+                resolve(v);
+            };
+            overlay.querySelector('#apiCancel').onclick = () => {
+                overlay.remove();
+                reject(new Error('Nincs API kulcs'));
+            };
+            input.addEventListener('keydown', e => {
+                if (e.key === 'Enter') overlay.querySelector('#apiSave').click();
+            });
+        });
+    }
+
+    function renderIndications(state, data){
+        const body = document.getElementById('indicationsBody');
+        if (state === 'loading') {
+            body.innerHTML = '<span class="spinner"></span><span style="font-size:13px;opacity:.8;">Lekérés folyamatban…</span>';
+        } else if (state === 'error') {
+            body.innerHTML = `<div class="err">${data}</div>`;
+        } else if (state === 'data') {
+            if (!Array.isArray(data) || data.length === 0) {
+                body.innerHTML = '<span style="opacity:.7;font-size:13px;">Nincs elérhető indikáció.</span>';
+            } else {
+                body.innerHTML = '<ul>' + data.map(x => `<li>${escapeHtml(String(x))}</li>`).join('') + '</ul>';
+            }
+        }
+    }
+
+    function escapeHtml(s){
+        return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    async function fetchIndications(drugName, mech, category, apiKey){
+        const prompt = `Adj 3-4 klinikai alkalmazási indikációt magyarul ehhez a gyógyszerhez: ${drugName} (${category}, ${mech}). Csak JSON tömböt adj vissza, pl: ["Hypertonia", "Szívelégtelenség"]`;
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerous-direct-browser-access': 'true',
+            },
+            body: JSON.stringify({
+                model: 'claude-3-5-haiku-20241022',
+                max_tokens: 300,
+                messages: [{ role: 'user', content: prompt }],
+            }),
+        });
+        if (!res.ok) {
+            const t = await res.text();
+            throw new Error(`Anthropic API hiba (${res.status}): ${t.slice(0, 200)}`);
+        }
+        const json = await res.json();
+        const text = json?.content?.[0]?.text || '';
+        const match = text.match(/\[[\s\S]*\]/);
+        if (!match) throw new Error('Nem sikerült értelmezni a választ.');
+        return JSON.parse(match[0]);
+    }
+
+    let lastIndicationsRequestId = 0;
+    async function loadIndications(drug){
+        const reqId = ++lastIndicationsRequestId;
+        const cache = getIndicationsCache();
+        if (cache[drug.id]) {
+            renderIndications('data', cache[drug.id]);
+            return;
+        }
+        renderIndications('loading');
+        let apiKey;
+        try {
+            apiKey = await ensureApiKey();
+        } catch {
+            if (reqId === lastIndicationsRequestId)
+                renderIndications('error', 'API kulcs nélkül nem érhető el az alkalmazás lista.');
+            return;
+        }
+        try {
+            const data = await fetchIndications(drug.name, drug.mech, drug.category, apiKey);
+            const fresh = getIndicationsCache();
+            fresh[drug.id] = data;
+            saveIndicationsCache(fresh);
+            if (reqId === lastIndicationsRequestId)
+                renderIndications('data', data);
+        } catch (err) {
+            if (reqId === lastIndicationsRequestId)
+                renderIndications('error', err.message || 'Ismeretlen hiba.');
+        }
     }
 
     init();
