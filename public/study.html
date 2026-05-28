@@ -208,6 +208,50 @@ body::after{
   color:var(--danger);text-transform:uppercase;margin-bottom:8px;font-weight:600;
 }
 
+.indications{
+  margin-top:14px;
+  font-size:15px;line-height:1.5;color:#d6ffe9;text-align:left;
+  background:linear-gradient(135deg,rgba(61,220,151,.16),rgba(31,167,117,.06));
+  padding:18px 20px;border-radius:16px;
+  border:1px solid rgba(61,220,151,.3);
+  border-left:3px solid #3ddc97;
+  backdrop-filter:blur(10px);
+}
+.indications strong{
+  display:block;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.3em;
+  color:#3ddc97;text-transform:uppercase;margin-bottom:8px;font-weight:600;
+}
+.indications ul{margin:0;padding-left:18px;}
+.indications li{margin:4px 0;}
+.indications .err{color:#ffb4be;font-size:13px;}
+.spinner{
+  display:inline-block;width:16px;height:16px;border-radius:50%;
+  border:2px solid rgba(61,220,151,.25);border-top-color:#3ddc97;
+  animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.api-modal{
+  position:fixed;inset:0;background:rgba(8,6,24,.75);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;z-index:100;padding:20px;
+}
+.api-modal-card{
+  background:linear-gradient(160deg,#1a1535,#0f0b25);
+  border:1px solid rgba(139,124,255,.35);border-radius:24px;
+  padding:28px;max-width:440px;width:100%;color:#f0ecff;
+  box-shadow:0 30px 80px -20px rgba(0,0,0,.6);
+}
+.api-modal-card h3{margin:0 0 8px;font-family:'Instrument Serif',serif;font-size:26px;font-weight:400;}
+.api-modal-card p{font-size:13px;line-height:1.5;color:#bdb6dc;margin:0 0 16px;}
+.api-modal-card input{
+  width:100%;padding:14px 16px;border-radius:12px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(139,124,255,.3);
+  color:#fff;font-family:'JetBrains Mono',monospace;font-size:13px;
+  outline:none;box-sizing:border-box;
+}
+.api-modal-card input:focus{border-color:var(--primary);}
+.api-modal-actions{display:flex;gap:10px;margin-top:16px;}
+
 .action-area{padding:0 28px 28px;display:flex;gap:12px}
 .btn{
   flex:1;padding:18px;font-family:'Space Grotesk',sans-serif;
@@ -307,6 +351,7 @@ body::after{
         <div class="answer-section" id="answerSection">
             <div class="mechanism" id="mechanism">Ide jön a mechanizmus</div>
             <div class="side-effects" id="sideEffects"><strong>⚠ Mellékhatások</strong><span>Ide jönnek a mellékhatások</span></div>
+            <div class="indications" id="indications"><strong>💊 Alkalmazás</strong><div id="indicationsBody"><span>—</span></div></div>
         </div>
     </div>
 
@@ -1597,6 +1642,7 @@ body::after{
         document.getElementById('drugName').innerText = currentDrug.name;
         document.getElementById('mechanism').innerText = currentDrug.mech;
         document.querySelector('#sideEffects span').innerText = currentDrug.side;
+        document.getElementById('indicationsBody').innerHTML = '<span style="opacity:.6;font-size:13px;">Fordítsd meg a kártyát az indikációkért.</span>';
         
         document.getElementById('answerSection').classList.remove('visible');
         document.getElementById('actionAreaReveal').classList.remove('hidden');
@@ -1607,6 +1653,7 @@ body::after{
         document.getElementById('answerSection').classList.add('visible');
         document.getElementById('actionAreaReveal').classList.add('hidden');
         document.getElementById('actionAreaRate').classList.remove('hidden');
+        loadIndications(currentDrug);
     }
 
     function handleResult(wasCorrect) {
@@ -1624,6 +1671,133 @@ body::after{
         updateStats(totalInCategory);
         
         setTimeout(() => { nextQuestion(); }, 400); // Rövid szünet a kényelmes olvasáshoz
+    }
+
+    // ==========================================
+    // ANTHROPIC API – Alkalmazás (indikációk)
+    // ==========================================
+    const INDICATIONS_CACHE_KEY = 'indications_cache_v1';
+    const API_KEY_STORAGE = 'anthropic_api_key';
+
+    function getIndicationsCache(){
+        try { return JSON.parse(localStorage.getItem(INDICATIONS_CACHE_KEY) || '{}'); }
+        catch { return {}; }
+    }
+    function saveIndicationsCache(cache){
+        localStorage.setItem(INDICATIONS_CACHE_KEY, JSON.stringify(cache));
+    }
+
+    function ensureApiKey(){
+        return new Promise((resolve, reject) => {
+            const existing = localStorage.getItem(API_KEY_STORAGE);
+            if (existing) return resolve(existing);
+
+            const overlay = document.createElement('div');
+            overlay.className = 'api-modal';
+            overlay.innerHTML = `
+              <div class="api-modal-card">
+                <h3>Anthropic API kulcs</h3>
+                <p>Az „Alkalmazás" indikációk dinamikus lekéréséhez add meg a saját Anthropic API kulcsodat. Csak helyben, a böngésződben tároljuk (localStorage).</p>
+                <input id="apiKeyInput" type="password" placeholder="sk-ant-..." autocomplete="off" />
+                <div class="api-modal-actions">
+                  <button class="btn btn-wrong" id="apiCancel">Mégse</button>
+                  <button class="btn btn-correct" id="apiSave">Mentés</button>
+                </div>
+              </div>`;
+            document.body.appendChild(overlay);
+            const input = overlay.querySelector('#apiKeyInput');
+            input.focus();
+            overlay.querySelector('#apiSave').onclick = () => {
+                const v = input.value.trim();
+                if (!v) { input.focus(); return; }
+                localStorage.setItem(API_KEY_STORAGE, v);
+                overlay.remove();
+                resolve(v);
+            };
+            overlay.querySelector('#apiCancel').onclick = () => {
+                overlay.remove();
+                reject(new Error('Nincs API kulcs'));
+            };
+            input.addEventListener('keydown', e => {
+                if (e.key === 'Enter') overlay.querySelector('#apiSave').click();
+            });
+        });
+    }
+
+    function renderIndications(state, data){
+        const body = document.getElementById('indicationsBody');
+        if (state === 'loading') {
+            body.innerHTML = '<span class="spinner"></span><span style="font-size:13px;opacity:.8;">Lekérés folyamatban…</span>';
+        } else if (state === 'error') {
+            body.innerHTML = `<div class="err">${data}</div>`;
+        } else if (state === 'data') {
+            if (!Array.isArray(data) || data.length === 0) {
+                body.innerHTML = '<span style="opacity:.7;font-size:13px;">Nincs elérhető indikáció.</span>';
+            } else {
+                body.innerHTML = '<ul>' + data.map(x => `<li>${escapeHtml(String(x))}</li>`).join('') + '</ul>';
+            }
+        }
+    }
+
+    function escapeHtml(s){
+        return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    async function fetchIndications(drugName, mech, category, apiKey){
+        const prompt = `Adj 3-4 klinikai alkalmazási indikációt magyarul ehhez a gyógyszerhez: ${drugName} (${category}, ${mech}). Csak JSON tömböt adj vissza, pl: ["Hypertonia", "Szívelégtelenség"]`;
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerous-direct-browser-access': 'true',
+            },
+            body: JSON.stringify({
+                model: 'claude-3-5-haiku-20241022',
+                max_tokens: 300,
+                messages: [{ role: 'user', content: prompt }],
+            }),
+        });
+        if (!res.ok) {
+            const t = await res.text();
+            throw new Error(`Anthropic API hiba (${res.status}): ${t.slice(0, 200)}`);
+        }
+        const json = await res.json();
+        const text = json?.content?.[0]?.text || '';
+        const match = text.match(/\[[\s\S]*\]/);
+        if (!match) throw new Error('Nem sikerült értelmezni a választ.');
+        return JSON.parse(match[0]);
+    }
+
+    let lastIndicationsRequestId = 0;
+    async function loadIndications(drug){
+        const reqId = ++lastIndicationsRequestId;
+        const cache = getIndicationsCache();
+        if (cache[drug.id]) {
+            renderIndications('data', cache[drug.id]);
+            return;
+        }
+        renderIndications('loading');
+        let apiKey;
+        try {
+            apiKey = await ensureApiKey();
+        } catch {
+            if (reqId === lastIndicationsRequestId)
+                renderIndications('error', 'API kulcs nélkül nem érhető el az alkalmazás lista.');
+            return;
+        }
+        try {
+            const data = await fetchIndications(drug.name, drug.mech, drug.category, apiKey);
+            const fresh = getIndicationsCache();
+            fresh[drug.id] = data;
+            saveIndicationsCache(fresh);
+            if (reqId === lastIndicationsRequestId)
+                renderIndications('data', data);
+        } catch (err) {
+            if (reqId === lastIndicationsRequestId)
+                renderIndications('error', err.message || 'Ismeretlen hiba.');
+        }
     }
 
     init();
