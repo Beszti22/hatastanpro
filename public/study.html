@@ -299,6 +299,16 @@ body::after{
 .toast.success{background:rgba(61,220,151,.85)}
 .toast.error{background:rgba(255,93,115,.85)}
 
+<button class="btn" style="
+  margin-top:4px;padding:10px 18px;
+  background:rgba(255,140,50,.1);
+  border:1px solid rgba(255,140,50,.3);
+  border-radius:12px;color:#ffb347;
+  font-size:12px;letter-spacing:.15em;
+  font-family:'JetBrains Mono',monospace;
+  text-transform:uppercase;flex:none;
+" onclick="openIrrPanel()">🚫 Irreleváns lista megtekintése</button>
+  
 .footer-note{
   text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;
   letter-spacing:.3em;color:var(--ink-dim);text-transform:uppercase;
@@ -309,6 +319,84 @@ body::after{
   .card-body{padding:36px 22px 22px;min-height:340px}
   .action-area{padding:0 22px 22px}
   .header{padding:22px 22px 18px}
+}
+/* ── Vissza gomb ─────────────────────────── */
+.btn-back{
+  background:linear-gradient(135deg,#2a2550,#1a1535);
+  box-shadow:0 8px 20px -8px rgba(0,0,0,.5);
+  border:1px solid var(--hairline);
+  color:var(--ink-dim);
+  flex:0 0 auto;width:52px;border-radius:14px;font-size:20px;
+  transition:transform .15s, color .2s, border-color .2s;
+}
+.btn-back:hover{color:var(--ink);border-color:rgba(139,124,255,.5)}
+.btn-back:disabled{opacity:.28;cursor:not-allowed;transform:none!important}
+
+/* ── Nem releváns gomb ───────────────────── */
+.btn-irrelevant{
+  background:linear-gradient(135deg,#2a1a10,#1a0f0a);
+  box-shadow:0 8px 20px -8px rgba(255,140,50,.3);
+  border:1px solid rgba(255,140,50,.25);
+  color:#ffb347;
+  flex:0 0 auto;padding:18px 16px;border-radius:14px;
+  font-size:13px;letter-spacing:.03em;
+}
+.btn-irrelevant:hover{border-color:rgba(255,140,50,.6);filter:brightness(1.15)}
+
+/* ── Irreleváns panel ────────────────────── */
+.irr-overlay{
+  position:fixed;inset:0;background:rgba(5,4,20,.82);
+  backdrop-filter:blur(10px);z-index:200;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .3s;
+}
+.irr-overlay.open{opacity:1;pointer-events:auto}
+.irr-card{
+  background:linear-gradient(160deg,#1a1840,#0d0b22);
+  border:1px solid rgba(255,140,50,.35);border-radius:24px;
+  padding:28px;max-width:520px;width:100%;
+  max-height:80vh;display:flex;flex-direction:column;
+  box-shadow:0 30px 80px -20px rgba(0,0,0,.7);
+}
+.irr-card h3{
+  font-family:'Instrument Serif',serif;font-size:24px;font-weight:400;
+  color:#ffb347;margin-bottom:4px;
+}
+.irr-card .irr-meta{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  letter-spacing:.25em;color:var(--ink-dim);text-transform:uppercase;
+  margin-bottom:18px;
+}
+.irr-list{
+  flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;
+  margin-bottom:18px;padding-right:4px;
+}
+.irr-list::-webkit-scrollbar{width:4px}
+.irr-list::-webkit-scrollbar-track{background:transparent}
+.irr-list::-webkit-scrollbar-thumb{background:rgba(255,180,71,.3);border-radius:2px}
+.irr-item{
+  display:flex;align-items:center;gap:12px;
+  background:rgba(255,140,50,.07);border:1px solid rgba(255,140,50,.18);
+  border-radius:12px;padding:12px 14px;
+}
+.irr-item-name{
+  flex:1;font-weight:600;font-size:14px;color:#ffe0b2;
+}
+.irr-item-cat{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  color:var(--ink-dim);letter-spacing:.1em;margin-top:2px;
+}
+.irr-item-del{
+  background:rgba(255,93,115,.15);border:1px solid rgba(255,93,115,.3);
+  color:#ff8a9a;border-radius:8px;padding:6px 10px;
+  font-size:13px;cursor:pointer;flex-shrink:0;
+  transition:background .2s, border-color .2s;
+}
+.irr-item-del:hover{background:rgba(255,93,115,.3);border-color:rgba(255,93,115,.6)}
+.irr-actions{display:flex;gap:10px;flex-wrap:wrap}
+.irr-empty{
+  text-align:center;padding:40px 20px;color:var(--ink-dim);
+  font-size:14px;line-height:1.6;
 }
 </style>
 </head>
@@ -322,7 +410,7 @@ body::after{
       <div class="brand-logo">℞</div>
       <div>
         <div class="brand-title">Hatóanyag Mester</div>
-        <div class="brand-sub">SOTE · Gyógyszerhatástan</div>
+        <div class="brand-sub">Gyógyszerhatástan</div>
       </div>
     </div>
     <a href="/" class="brand-badge back-link">← Főoldal</a>
@@ -360,13 +448,16 @@ body::after{
     </div>
 
     <div class="action-area" id="actionAreaReveal">
-        <button class="btn btn-reveal" onclick="showAnswer()">Válasz mutatása →</button>
-    </div>
+    <button class="btn btn-back" id="backBtn" onclick="goBack()" disabled title="Előző kártya">↩</button>
+    <button class="btn btn-reveal" onclick="showAnswer()">Válasz mutatása →</button>
+    <button class="btn btn-irrelevant" onclick="markIrrelevant()" title="Nem releváns hatóanyag jelölése">🚫</button>
+</div>
 
-    <div class="action-area hidden" id="actionAreaRate">
-        <button class="btn btn-wrong" onclick="handleResult(false)">Még nem megy</button>
-        <button class="btn btn-correct" onclick="handleResult(true)">Tudtam</button>
-    </div>
+<div class="action-area hidden" id="actionAreaRate">
+    <button class="btn btn-wrong" onclick="handleResult(false)">Még nem megy</button>
+    <button class="btn btn-correct" onclick="handleResult(true)">Tudtam</button>
+    <button class="btn btn-irrelevant" onclick="markIrrelevant()" title="Nem releváns">🚫</button>
+</div>
 
 </div>
   <div class="footer-note">Készült • Tanulj okosan</div>
@@ -1568,7 +1659,20 @@ body::after{
     ];
     // ==========================================
 
-    let learnedIds = [];
+let learnedIds = [];
+let irrelevantIds = [];
+let previousDrug = null;   // az egyel előző kártya
+let previousFilteredList = null; // az előző állapot
+
+function loadIrrelevant() {
+    try {
+        const s = localStorage.getItem('soteIrrelevant');
+        if (s) irrelevantIds = JSON.parse(s);
+    } catch(e) {}
+}
+function saveIrrelevant() {
+    try { localStorage.setItem('soteIrrelevant', JSON.stringify(irrelevantIds)); } catch(e) {}
+}
     let currentFilteredList = [];
     let currentDrug = null;
 
@@ -1587,10 +1691,11 @@ body::after{
     }
 
     function init() {
-        loadProgress();
-        populateCategories();
-        changeCategory();
-    }
+    loadProgress();
+    loadIrrelevant();
+    populateCategories();
+    changeCategory();
+}
 
     function populateCategories() {
         const select = document.getElementById('categoryFilter');
@@ -1604,12 +1709,240 @@ body::after{
     }
 
     function changeCategory() {
-        const category = document.getElementById('categoryFilter').value;
-        let filteredByCategory = category === "All" ? allDrugs : allDrugs.filter(d => d.category === category);
-        currentFilteredList = filteredByCategory.filter(d => !learnedIds.includes(d.id));
-        updateStats(filteredByCategory.length);
-        nextQuestion();
+    previousDrug = null;
+    previousFilteredList = null;
+    updateBackBtn();
+    const category = document.getElementById('categoryFilter').value;
+    let filteredByCategory = category === "All" ? allDrugs : allDrugs.filter(d => d.category === category);
+    currentFilteredList = filteredByCategory.filter(d => !learnedIds.includes(d.id) && !irrelevantIds.includes(d.id));
+    updateStats(filteredByCategory.length);
+    nextQuestion();
+}
+
+7. JavaScript — a nextQuestion() függvényt módosítsd (csak a currentDrug = ... utáni sort add meg előtte):
+javascript// RÉGI:
+function nextQuestion() {
+    if (allDrugs.length === 0) {
+        document.getElementById('drugName').innerText = "NINCS ADAT";
+        return;
     }
+    if (currentFilteredList.length === 0) {
+        document.getElementById('drugName').innerText = "🎉 MINDENT MEGTANULTÁL!";
+        document.getElementById('statsText').innerText = "Válts kategóriát, vagy nullázd a haladást!";
+        document.getElementById('actionAreaReveal').classList.add('hidden');
+        document.getElementById('actionAreaRate').classList.add('hidden');
+        document.getElementById('answerSection').classList.remove('visible');
+        return;
+    }
+
+    const randIndex = Math.floor(Math.random() * currentFilteredList.length);
+    // Mentjük az előző állapotot MIELŐTT felülírjuk
+    previousDrug = currentDrug;
+    previousFilteredList = currentFilteredList ? [...currentFilteredList] : null;
+    
+    currentDrug = currentFilteredList[randIndex];
+
+    document.getElementById('drugName').innerText = currentDrug.name;
+    document.getElementById('mechanism').innerText = currentDrug.mech;
+    document.querySelector('#sideEffects span').innerText = currentDrug.side;
+    document.getElementById('indicationsBody').innerHTML = '<span style="opacity:.6;font-size:13px;">Fordítsd meg a kártyát az indikációkért.</span>';
+
+    document.getElementById('answerSection').classList.remove('visible');
+    document.getElementById('actionAreaReveal').classList.remove('hidden');
+    document.getElementById('actionAreaRate').classList.add('hidden');
+    
+    updateBackBtn();
+}
+// ÚJ (a teljes függvény):
+function nextQuestion() {
+    if (allDrugs.length === 0) {
+        document.getElementById('drugName').innerText = "NINCS ADAT";
+        return;
+    }
+    if (currentFilteredList.length === 0) {
+        document.getElementById('drugName').innerText = "🎉 MINDENT MEGTANULTÁL!";
+        document.getElementById('statsText').innerText = "Válts kategóriát, vagy nullázd a haladást!";
+        document.getElementById('actionAreaReveal').classList.add('hidden');
+        document.getElementById('actionAreaRate').classList.add('hidden');
+        document.getElementById('answerSection').classList.remove('visible');
+        return;
+    }
+
+    const randIndex = Math.floor(Math.random() * currentFilteredList.length);
+    // Mentjük az előző állapotot MIELŐTT felülírjuk
+    previousDrug = currentDrug;
+    previousFilteredList = currentFilteredList ? [...currentFilteredList] : null;
+    
+    currentDrug = currentFilteredList[randIndex];
+
+    document.getElementById('drugName').innerText = currentDrug.name;
+    document.getElementById('mechanism').innerText = currentDrug.mech;
+    document.querySelector('#sideEffects span').innerText = currentDrug.side;
+    document.getElementById('indicationsBody').innerHTML = '<span style="opacity:.6;font-size:13px;">Fordítsd meg a kártyát az indikációkért.</span>';
+
+    document.getElementById('answerSection').classList.remove('visible');
+    document.getElementById('actionAreaReveal').classList.remove('hidden');
+    document.getElementById('actionAreaRate').classList.add('hidden');
+    
+    updateBackBtn();
+}
+
+8. JavaScript — a handleResult() függvényt módosítsd:
+javascript// RÉGI:
+function handleResult(wasCorrect) {
+    if (wasCorrect) {
+        learnedIds.push(currentDrug.id);
+        saveProgress();
+        showToast("Sikeresen rögzítve! 🧠", true);
+        currentFilteredList = currentFilteredList.filter(d => d.id !== currentDrug.id);
+        previousDrug = null; // ha megtanulta, nem léphet vissza
+        previousFilteredList = null;
+        updateBackBtn();
+    } else {
+        showToast("Visszakerült a pakliba! 🔄", false);
+    }
+
+    const category = document.getElementById('categoryFilter').value;
+    const totalInCategory = category === "All" ? allDrugs.length : allDrugs.filter(d => d.category === category).length;
+    updateStats(totalInCategory);
+    
+    setTimeout(() => { nextQuestion(); }, 400);
+}
+
+// ÚJ:
+function handleResult(wasCorrect) {
+    if (wasCorrect) {
+        learnedIds.push(currentDrug.id);
+        saveProgress();
+        showToast("Sikeresen rögzítve! 🧠", true);
+        currentFilteredList = currentFilteredList.filter(d => d.id !== currentDrug.id);
+        previousDrug = null; // ha megtanulta, nem léphet vissza
+        previousFilteredList = null;
+        updateBackBtn();
+    } else {
+        showToast("Visszakerült a pakliba! 🔄", false);
+    }
+
+    const category = document.getElementById('categoryFilter').value;
+    const totalInCategory = category === "All" ? allDrugs.length : allDrugs.filter(d => d.category === category).length;
+    updateStats(totalInCategory);
+    
+    setTimeout(() => { nextQuestion(); }, 400);
+}
+
+9. JavaScript — ÚJ függvények (az init() hívás elé add be):
+javascript// ── VISSZA gomb ──────────────────────────────────────
+function goBack() {
+    if (!previousDrug || !previousFilteredList) return;
+    
+    // Visszaállítjuk az előző állapotot
+    currentDrug = previousDrug;
+    currentFilteredList = previousFilteredList;
+    previousDrug = null;
+    previousFilteredList = null;
+
+    document.getElementById('drugName').innerText = currentDrug.name;
+    document.getElementById('mechanism').innerText = currentDrug.mech;
+    document.querySelector('#sideEffects span').innerText = currentDrug.side;
+    document.getElementById('indicationsBody').innerHTML = '<span style="opacity:.6;font-size:13px;">Fordítsd meg a kártyát az indikációkért.</span>';
+
+    document.getElementById('answerSection').classList.remove('visible');
+    document.getElementById('actionAreaReveal').classList.remove('hidden');
+    document.getElementById('actionAreaRate').classList.add('hidden');
+    
+    updateBackBtn();
+}
+
+function updateBackBtn() {
+    const btn = document.getElementById('backBtn');
+    if (!btn) return;
+    btn.disabled = !previousDrug;
+}
+
+// ── NEM RELEVÁNS ─────────────────────────────────────
+function markIrrelevant() {
+    if (!currentDrug) return;
+    if (irrelevantIds.includes(currentDrug.id)) {
+        showToast("Már meg van jelölve! 🚫", false);
+        return;
+    }
+    irrelevantIds.push(currentDrug.id);
+    saveIrrelevant();
+    showToast(`"${currentDrug.name}" megjelölve 🚫`, false);
+    currentFilteredList = currentFilteredList.filter(d => d.id !== currentDrug.id);
+    previousDrug = null;
+    previousFilteredList = null;
+    updateBackBtn();
+
+    const category = document.getElementById('categoryFilter').value;
+    const totalInCategory = category === "All" ? allDrugs.length : allDrugs.filter(d => d.category === category).length;
+    updateStats(totalInCategory);
+    setTimeout(() => { nextQuestion(); }, 400);
+}
+
+// ── IRRELEVÁNS PANEL ─────────────────────────────────
+function openIrrPanel() {
+    renderIrrList();
+    document.getElementById('irrOverlay').classList.add('open');
+}
+
+function closeIrrPanel(e) {
+    if (e && e.target !== document.getElementById('irrOverlay')) return;
+    document.getElementById('irrOverlay').classList.remove('open');
+}
+
+function renderIrrList() {
+    const list = document.getElementById('irrList');
+    if (irrelevantIds.length === 0) {
+        list.innerHTML = '<div class="irr-empty">Még nincsenek megjelölt hatóanyagok.<br><span style="opacity:.6;font-size:12px;">A 🚫 gombbal tudod megjelölni a számodra nem releváns anyagokat.</span></div>';
+        return;
+    }
+    const drugs = irrelevantIds.map(id => allDrugs.find(d => d.id === id)).filter(Boolean);
+    list.innerHTML = drugs.map(d => `
+        <div class="irr-item" id="irr-${d.id}">
+            <div style="flex:1">
+                <div class="irr-item-name">${d.name}</div>
+                <div class="irr-item-cat">${d.category}</div>
+            </div>
+            <button class="irr-item-del" onclick="removeIrrelevant('${d.id}')">✕ Visszaállít</button>
+        </div>
+    `).join('');
+}
+
+function removeIrrelevant(id) {
+    irrelevantIds = irrelevantIds.filter(x => x !== id);
+    saveIrrelevant();
+    // Visszakerül a paklijába
+    changeCategory();
+    renderIrrList();
+}
+
+function clearAllIrrelevant() {
+    if (!confirm(`Biztosan visszaállítod mind a ${irrelevantIds.length} megjelölt hatóanyagot?`)) return;
+    irrelevantIds = [];
+    saveIrrelevant();
+    changeCategory();
+    renderIrrList();
+}
+
+function exportIrrelevantList() {
+    if (irrelevantIds.length === 0) {
+        showToast("Nincs megjelölt hatóanyag!", false);
+        return;
+    }
+    const drugs = irrelevantIds.map(id => allDrugs.find(d => d.id === id)).filter(Boolean);
+    const text = drugs.map(d => `${d.name} (${d.category}) — id: ${d.id}`).join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+        showToast(`${drugs.length} hatóanyag másolva! 📋`, true);
+    }).catch(() => {
+        // Fallback: prompt-ban mutatjuk
+        prompt("Másold ki a listát:", text);
+    });
+}
+
+Összefoglalás
+A fenti változtatásokat a study.html fájlba illesztve az alábbi funkciókat kapod:
+FunkcióHol jelenik megLeírás↩ VisszaKártya bal oldalánCsak az egyel előző kártyára lép vissza. Letiltva ha nincs előző (pl. kategóriaváltás után, vagy ha "Tudtam"-ot nyomtál).🚫 Nem relevánsKártya jobb oldalán (mindkét action area-ban)Megjelöli a hatóanyagot, kiveszi a pakliból, localStorage-ba menti.🚫 Irreleváns listaAz oldal alján lévő gombMegnyit egy panelt ahol látod az összes megjelölt hatóanyagot (névvel + kategóriával), egyenként visszaállíthatod, összeset törölheted, vagy vágólapra másolhatod a listát (hogy nekem add).1 / 2
 
     function updateStats(totalInCategory) {
         const learned = totalInCategory - currentFilteredList.length;
@@ -1726,7 +2059,114 @@ body::after{
                 renderIndications('error', err.message || 'Ismeretlen hiba.');
         }
     }
+// ── VISSZA gomb ──────────────────────────────────────
+function goBack() {
+    if (!previousDrug || !previousFilteredList) return;
+    
+    // Visszaállítjuk az előző állapotot
+    currentDrug = previousDrug;
+    currentFilteredList = previousFilteredList;
+    previousDrug = null;
+    previousFilteredList = null;
 
+    document.getElementById('drugName').innerText = currentDrug.name;
+    document.getElementById('mechanism').innerText = currentDrug.mech;
+    document.querySelector('#sideEffects span').innerText = currentDrug.side;
+    document.getElementById('indicationsBody').innerHTML = '<span style="opacity:.6;font-size:13px;">Fordítsd meg a kártyát az indikációkért.</span>';
+
+    document.getElementById('answerSection').classList.remove('visible');
+    document.getElementById('actionAreaReveal').classList.remove('hidden');
+    document.getElementById('actionAreaRate').classList.add('hidden');
+    
+    updateBackBtn();
+}
+
+function updateBackBtn() {
+    const btn = document.getElementById('backBtn');
+    if (!btn) return;
+    btn.disabled = !previousDrug;
+}
+
+// ── NEM RELEVÁNS ─────────────────────────────────────
+function markIrrelevant() {
+    if (!currentDrug) return;
+    if (irrelevantIds.includes(currentDrug.id)) {
+        showToast("Már meg van jelölve! 🚫", false);
+        return;
+    }
+    irrelevantIds.push(currentDrug.id);
+    saveIrrelevant();
+    showToast(`"${currentDrug.name}" megjelölve 🚫`, false);
+    currentFilteredList = currentFilteredList.filter(d => d.id !== currentDrug.id);
+    previousDrug = null;
+    previousFilteredList = null;
+    updateBackBtn();
+
+    const category = document.getElementById('categoryFilter').value;
+    const totalInCategory = category === "All" ? allDrugs.length : allDrugs.filter(d => d.category === category).length;
+    updateStats(totalInCategory);
+    setTimeout(() => { nextQuestion(); }, 400);
+}
+
+// ── IRRELEVÁNS PANEL ─────────────────────────────────
+function openIrrPanel() {
+    renderIrrList();
+    document.getElementById('irrOverlay').classList.add('open');
+}
+
+function closeIrrPanel(e) {
+    if (e && e.target !== document.getElementById('irrOverlay')) return;
+    document.getElementById('irrOverlay').classList.remove('open');
+}
+
+function renderIrrList() {
+    const list = document.getElementById('irrList');
+    if (irrelevantIds.length === 0) {
+        list.innerHTML = '<div class="irr-empty">Még nincsenek megjelölt hatóanyagok.<br><span style="opacity:.6;font-size:12px;">A 🚫 gombbal tudod megjelölni a számodra nem releváns anyagokat.</span></div>';
+        return;
+    }
+    const drugs = irrelevantIds.map(id => allDrugs.find(d => d.id === id)).filter(Boolean);
+    list.innerHTML = drugs.map(d => `
+        <div class="irr-item" id="irr-${d.id}">
+            <div style="flex:1">
+                <div class="irr-item-name">${d.name}</div>
+                <div class="irr-item-cat">${d.category}</div>
+            </div>
+            <button class="irr-item-del" onclick="removeIrrelevant('${d.id}')">✕ Visszaállít</button>
+        </div>
+    `).join('');
+}
+
+function removeIrrelevant(id) {
+    irrelevantIds = irrelevantIds.filter(x => x !== id);
+    saveIrrelevant();
+    // Visszakerül a paklijába
+    changeCategory();
+    renderIrrList();
+}
+
+function clearAllIrrelevant() {
+    if (!confirm(`Biztosan visszaállítod mind a ${irrelevantIds.length} megjelölt hatóanyagot?`)) return;
+    irrelevantIds = [];
+    saveIrrelevant();
+    changeCategory();
+    renderIrrList();
+}
+
+function exportIrrelevantList() {
+    if (irrelevantIds.length === 0) {
+        showToast("Nincs megjelölt hatóanyag!", false);
+        return;
+    }
+    const drugs = irrelevantIds.map(id => allDrugs.find(d => d.id === id)).filter(Boolean);
+    const text = drugs.map(d => `${d.name} (${d.category}) — id: ${d.id}`).join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+        showToast(`${drugs.length} hatóanyag másolva! 📋`, true);
+    }).catch(() => {
+        // Fallback: prompt-ban mutatjuk
+        prompt("Másold ki a listát:", text);
+    });
+}
     init();
 </script>
 
