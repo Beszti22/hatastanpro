@@ -91,6 +91,10 @@ body::after{
   background:var(--glass);color:var(--ink-dim);
   backdrop-filter:blur(20px);
 }
+.back-link{
+  text-decoration:none;color:var(--ink-dim);transition:color .2s, border-color .2s, background .2s;
+}
+.back-link:hover{color:var(--ink);border-color:rgba(139,124,255,.5);background:var(--glass-strong);}
 
 .app-container{
   background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03));
@@ -321,7 +325,7 @@ body::after{
         <div class="brand-sub">SOTE · Gyógyszerhatástan</div>
       </div>
     </div>
-    <div class="brand-badge">v · 5.0</div>
+    <a href="/" class="brand-badge back-link">← Főoldal</a>
   </div>
 
 <div class="app-container">
