@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+import logo from "@/assets/logo.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "SOTE Hatóanyag Mester — Gyógyszerhatástan kártyák" },
-      { name: "description", content: "Interaktív gyógyszerhatástan kártyák SOTE hallgatóknak: hatóanyagok, mechanizmusok és mellékhatások." },
-      { property: "og:title", content: "SOTE Hatóanyag Mester" },
+      { title: "Pharmakon — Gyógyszerhatástan kártyák" },
+      { name: "description", content: "Pharmakon: interaktív gyógyszerhatástan tanulókártyák – 1070 hatóanyag, mechanizmusok és mellékhatások egy helyen." },
+      { property: "og:title", content: "Pharmakon" },
       { property: "og:description", content: "Interaktív gyógyszerhatástan tanulókártyák." },
     ],
   }),
@@ -19,8 +20,8 @@ function Index() {
       <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <a href="/" className="flex items-center gap-2 font-semibold tracking-tight text-slate-900">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#0b2545] text-white">💊</span>
-            <span>SOTE Hatóanyag Mester</span>
+            <img src={logo} alt="Pharmakon logó" className="h-9 w-9 rounded-lg object-cover" />
+            <span>Pharmakon</span>
           </a>
           <a
             href="/study.html"
@@ -41,11 +42,8 @@ function Index() {
           }}
         />
         <div className="mx-auto max-w-4xl px-6 pt-20 pb-24 text-center sm:pt-28">
-          <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 shadow-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            SOTE orvostanhallgatóknak
-          </span>
-          <h1 className="mt-6 text-4xl font-bold tracking-tight text-[#0b2545] sm:text-6xl">
+          <img src={logo} alt="Pharmakon logó" className="mx-auto h-28 w-28 rounded-2xl object-cover shadow-lg shadow-[#0b2545]/20" />
+          <h1 className="mt-8 text-4xl font-bold tracking-tight text-[#0b2545] sm:text-6xl">
             Tanuld meg az 1070 hatóanyagot{" "}
             <span className="block text-[#13315c] sm:inline">– hatékonyan</span>
           </h1>
@@ -187,7 +185,7 @@ function Index() {
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-slate-500 sm:flex-row">
-          <span>SOTE Hatóanyag Mester · 2025</span>
+          <span>Pharmakon · 2025</span>
           <a href="/study.html" className="hover:text-[#0b2545]">Tanulás megkezdése →</a>
         </div>
       </footer>
