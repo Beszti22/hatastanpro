@@ -1881,10 +1881,6 @@ function exportIrrelevantList() {
     });
 }
 
-Összefoglalás
-A fenti változtatásokat a study.html fájlba illesztve az alábbi funkciókat kapod:
-FunkcióHol jelenik megLeírás↩ VisszaKártya bal oldalánCsak az egyel előző kártyára lép vissza. Letiltva ha nincs előző (pl. kategóriaváltás után, vagy ha "Tudtam"-ot nyomtál).🚫 Nem relevánsKártya jobb oldalán (mindkét action area-ban)Megjelöli a hatóanyagot, kiveszi a pakliból, localStorage-ba menti.🚫 Irreleváns listaAz oldal alján lévő gombMegnyit egy panelt ahol látod az összes megjelölt hatóanyagot (névvel + kategóriával), egyenként visszaállíthatod, összeset törölheted, vagy vágólapra másolhatod a listát (hogy nekem add).1 / 2
-
     function updateStats(totalInCategory) {
         const learned = totalInCategory - currentFilteredList.length;
         const percent = totalInCategory === 0 ? 0 : (learned / totalInCategory) * 100;
