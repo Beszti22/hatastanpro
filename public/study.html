@@ -1719,41 +1719,6 @@ function saveIrrelevant() {
     nextQuestion();
 }
 
-7. JavaScript — a nextQuestion() függvényt módosítsd (csak a currentDrug = ... utáni sort add meg előtte):
-javascript// RÉGI:
-function nextQuestion() {
-    if (allDrugs.length === 0) {
-        document.getElementById('drugName').innerText = "NINCS ADAT";
-        return;
-    }
-    if (currentFilteredList.length === 0) {
-        document.getElementById('drugName').innerText = "🎉 MINDENT MEGTANULTÁL!";
-        document.getElementById('statsText').innerText = "Válts kategóriát, vagy nullázd a haladást!";
-        document.getElementById('actionAreaReveal').classList.add('hidden');
-        document.getElementById('actionAreaRate').classList.add('hidden');
-        document.getElementById('answerSection').classList.remove('visible');
-        return;
-    }
-
-    const randIndex = Math.floor(Math.random() * currentFilteredList.length);
-    // Mentjük az előző állapotot MIELŐTT felülírjuk
-    previousDrug = currentDrug;
-    previousFilteredList = currentFilteredList ? [...currentFilteredList] : null;
-    
-    currentDrug = currentFilteredList[randIndex];
-
-    document.getElementById('drugName').innerText = currentDrug.name;
-    document.getElementById('mechanism').innerText = currentDrug.mech;
-    document.querySelector('#sideEffects span').innerText = currentDrug.side;
-    document.getElementById('indicationsBody').innerHTML = '<span style="opacity:.6;font-size:13px;">Fordítsd meg a kártyát az indikációkért.</span>';
-
-    document.getElementById('answerSection').classList.remove('visible');
-    document.getElementById('actionAreaReveal').classList.remove('hidden');
-    document.getElementById('actionAreaRate').classList.add('hidden');
-    
-    updateBackBtn();
-}
-// ÚJ (a teljes függvény):
 function nextQuestion() {
     if (allDrugs.length === 0) {
         document.getElementById('drugName').innerText = "NINCS ADAT";
@@ -1787,8 +1752,6 @@ function nextQuestion() {
     updateBackBtn();
 }
 
-8. JavaScript — a handleResult() függvényt módosítsd:
-javascript// RÉGI:
 function handleResult(wasCorrect) {
     if (wasCorrect) {
         learnedIds.push(currentDrug.id);
@@ -1809,29 +1772,7 @@ function handleResult(wasCorrect) {
     setTimeout(() => { nextQuestion(); }, 400);
 }
 
-// ÚJ:
-function handleResult(wasCorrect) {
-    if (wasCorrect) {
-        learnedIds.push(currentDrug.id);
-        saveProgress();
-        showToast("Sikeresen rögzítve! 🧠", true);
-        currentFilteredList = currentFilteredList.filter(d => d.id !== currentDrug.id);
-        previousDrug = null; // ha megtanulta, nem léphet vissza
-        previousFilteredList = null;
-        updateBackBtn();
-    } else {
-        showToast("Visszakerült a pakliba! 🔄", false);
-    }
-
-    const category = document.getElementById('categoryFilter').value;
-    const totalInCategory = category === "All" ? allDrugs.length : allDrugs.filter(d => d.category === category).length;
-    updateStats(totalInCategory);
-    
-    setTimeout(() => { nextQuestion(); }, 400);
-}
-
-9. JavaScript — ÚJ függvények (az init() hívás elé add be):
-javascript// ── VISSZA gomb ──────────────────────────────────────
+// ── VISSZA gomb ──────────────────────────────────────
 function goBack() {
     if (!previousDrug || !previousFilteredList) return;
     
